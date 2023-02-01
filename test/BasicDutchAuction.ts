@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 // import { ethers } from "@nomiclabs/buidler";
-import { Contract, Signer } from 'ethers';
+import { Contract, Signer, utils } from 'ethers';
 
 describe('Deploy the Dutch Auction Contract', function () {
 
@@ -29,16 +29,13 @@ describe('Deploy the Dutch Auction Contract', function () {
     expect(await contract.deployed());
   });
 
-  it("Should set the right curPrice", async function () {
-    const { contract, RESERVE_PRICE, NUM_BLOCKS_AUCTION_OPEN, PRICE_DECREMENT } = await loadFixture(deployContractDA);
-    const curPrice = RESERVE_PRICE + (PRICE_DECREMENT * NUM_BLOCKS_AUCTION_OPEN);
-    expect(await contract.currentPrice()).to.equal(curPrice);
-  });
-
-
   describe('Working of the BasicDutchAuction', () => {
     let contract: Contract;
     let owner: Signer;
+    let auctionEndBlock: number;
+    let initialPrice: number;
+    const wallet = utils.getAddress(`0x0000000000000000000000000000000000000000`);
+    const buyer = utils.getAddress(`0x0000000000000000000000000000000000000000`);
   
     beforeEach(async () => {
       [owner] = await ethers.getSigners();
@@ -63,48 +60,51 @@ describe('Deploy the Dutch Auction Contract', function () {
       expect(await contract.currentPrice()).to.equal(1000 + (100 * 10));
     });
   
-    // it('should accept a valid bid', async () => {
-    //   const result = await contract.bid({ value: 1500 });
-    //   expect(result.hash).to.not.be.null;
-    // });
-  
-    // it('should set the correct winning address', async () => {
-    //   await contract.bid({ value: 1500 });
-    //   expect(await contract.winnerAddress()).to.equal(await owner.getAddress());
-    // });
-  
-    // it('should set the correct winning bid amount', async () => {
-    //   await contract.bid({ value: 1500 });
-    //   expect(await contract.winningBidAmount()).to.equal(1500);
-    // });
-  
-    // it('should end the auction', async () => {
-    //   await contract.bid({ value: 1500 });
-    //   expect(await contract.auctionEnded()).to.be.true;
-    // });
-  
-    // it('should refund a bid', async () => {
-    //   const bidAmount = 1000;
-    //   const balanceBefore = await owner.getBalance();
-    //   await contract.bid({ value: bidAmount });
-    //   await contract.refundBid();
-    //   const balanceAfter = await owner.getBalance();
-    //   expect(balanceAfter.sub(balanceBefore).toNumber()).to.equal(bidAmount);
-    // });
-  
-  });
+    it('should accept a valid bid', async () => {
+      const result = await contract.bid({ value: 2000 });
+      expect(result.hash).to.not.be.null;
+    });
 
-  // describe('Working of the Dutch Auction', function () {
-  //   let dutchAuction:  ethers.Contract;
-  //   let wallet: ethers.Signer;
-
-  //   beforeEach(async () => {
-  //     [wallet] = await ethers.getSigners();
-  //     dutchAuction = await deployContractDA();
-  //   });
-
-  // });
-    
+    it('should not allow bidding below the current price', async () => {
+      try {
+        await contract.bid({ value: 1500});
+      } catch (error: any) {
+        expect(error.message).to.equal("VM Exception while processing transaction: reverted with reason string 'Bid is lower than current price'");
+      }
+    });
+  
+    it('should set the correct winning address', async () => {
+      await contract.bid({ value: 2000 });
+      expect(await contract.winnerAddress()).to.equal(await owner.getAddress());
+    });
+  
+    it('should set the correct winning bid amount', async () => {
+      await contract.bid({ value: 2000 });
+      expect(await contract.winningBidAmount()).to.equal(2000);
+    });
+  
+    it('should end the auction', async () => {
+      await contract.bid({ value: 2000 });
+      expect(await contract.auctionEnded()).to.be.true;
+    });
+  
+    it('should refund a bid', async () => {
+      const bidAmount = 2500;
+      const balanceBefore = await owner.getBalance();
+      await contract.bid({ value: bidAmount, from: buyer });
+      await contract.refundBid({ from: buyer });
+      const balanceAfter = await owner.getBalance();
+      expect(balanceAfter.sub(balanceBefore).toNumber()).to.equal(bidAmount);
+    });
+  
+    it('should not allow refunding if the auction did not end', async () => {
+      try {
+        await contract.refundBid();
+      } catch (error: any) {
+        expect(error.message).to.equal("VM Exception while processing transaction: reverted with reason string 'Auction has not ended or you are the winning bidder.'");
+      }
+    });
+  });    
 });
 
 

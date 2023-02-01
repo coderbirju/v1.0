@@ -13,7 +13,7 @@ contract BasicDutchAuction {
     uint256 public numBlocksActionOpen;
     uint256 offerPriceDecrement;
     uint startBlockNumber;
-    uint winningBidAmount;
+    uint public winningBidAmount;
     bool public auctionEnded;
     bool confirmed;
     uint public initialPrice;
@@ -60,23 +60,6 @@ contract BasicDutchAuction {
         }
         currentPrice -= offerPriceDecrement;
     }
-
-    // third party can finalize the auction
-    // function finalize() public {
-    //     // using the finlalize to transfer the amount
-    //     require(auctionEnded && !confirmed);
-    //     require(msg.sender == winnerAddress);
-    //     confirmed = true;
-    //     addressOfOwner.transfer(winningBidAmount);
-    // }
-
-    // function refund(uint256 refundAmount) public {
-    //     // initiate the refund amount
-    //     require(auctionEnded && !confirmed);
-    //     require(msg.sender == judgeAddress);
-    //     confirmed = true;
-    //     winnerAddress.transfer(refundAmount);
-    // }
 
     function refundBid() public {
         require(auctionEnded && msg.sender != winnerAddress, "Auction has not ended or you are the winning bidder.");
