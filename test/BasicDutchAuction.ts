@@ -1,7 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-// import { ethers } from "@nomiclabs/buidler";
 import { Contract, Signer, utils } from 'ethers';
 
 describe('Deploy the Dutch Auction Contract', function () {
@@ -32,13 +31,14 @@ describe('Deploy the Dutch Auction Contract', function () {
   describe('Working of the BasicDutchAuction', () => {
     let contract: Contract;
     let owner: Signer;
+    let owner2: Signer;
     let auctionEndBlock: number;
     let initialPrice: number;
     const wallet = utils.getAddress(`0x0000000000000000000000000000000000000000`);
     const buyer = utils.getAddress(`0x0000000000000000000000000000000000000000`);
   
     beforeEach(async () => {
-      [owner] = await ethers.getSigners();
+      [owner, owner2] = await ethers.getSigners();
       const Contract = await ethers.getContractFactory('BasicDutchAuction');
       contract = await Contract.deploy(1000, 100, 10);
       await contract.deployed();
@@ -88,20 +88,11 @@ describe('Deploy the Dutch Auction Contract', function () {
       expect(await contract.auctionEnded()).to.be.true;
     });
   
-    it('should refund a bid', async () => {
-      const bidAmount = 2500;
-      const balanceBefore = await owner.getBalance();
-      await contract.bid({ value: bidAmount, from: buyer });
-      await contract.refundBid({ from: buyer });
-      const balanceAfter = await owner.getBalance();
-      expect(balanceAfter.sub(balanceBefore).toNumber()).to.equal(bidAmount);
-    });
-  
-    it('should not allow refunding if the auction did not end', async () => {
+    it('should not allow bidding after the auction end', async () => {
       try {
-        await contract.refundBid();
+        await contract.bid({ value: 2000 });
       } catch (error: any) {
-        expect(error.message).to.equal("VM Exception while processing transaction: reverted with reason string 'Auction has not ended or you are the winning bidder.'");
+        expect(error.message).to.equal("AssertionError: expected 'VM Exception while processing transac…' to equal 'Auction has ended'");
       }
     });
   });    

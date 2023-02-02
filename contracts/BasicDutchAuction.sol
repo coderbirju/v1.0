@@ -34,23 +34,24 @@ contract BasicDutchAuction {
     }
 
     function bid() public payable returns(address) {
+        if(auctionEnded && winnerAddress != address(0) && msg.sender != winnerAddress) {
+            address payable refundCaller = payable(msg.sender);
+            refundCaller.transfer(address(this).balance);
+        }
         // check if the auction has ended
         require(!auctionEnded, "Auction has ended");
         // check if the block number is within the time limit
         require(block.number < auctionEndBlock, "Auction has ended");
+        updatePrice();
         // check if the bid is higher than the reserve price
         require(msg.value >= currentPrice, "Bid is lower than current price");
-
         require(winnerAddress == address(0), "Auction has already been won");
-	
-	// if the bid value is higher end the auction
+	    // if the bid value is higher end the auction and transfer the funds to the owner
         auctionEnded = true;
-
         winnerAddress = payable(msg.sender);
         addressOfOwner.transfer(msg.value);
         winningBidAmount = msg.value;
         return winnerAddress;
-        // return address(0);
     }
 
     function updatePrice() internal {
@@ -58,12 +59,6 @@ contract BasicDutchAuction {
             auctionEnded = true;
             return;
         }
-        currentPrice -= offerPriceDecrement;
-    }
-
-    function refundBid() public {
-        require(auctionEnded && msg.sender != winnerAddress, "Auction has not ended or you are the winning bidder.");
-        address payable refundCaller = payable(msg.sender);
-        refundCaller.transfer(address(this).balance);
+        currentPrice = initialPrice - (offerPriceDecrement * (block.number - startBlockNumber));
     }
 }
