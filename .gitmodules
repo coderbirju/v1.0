@@ -10,3 +10,6 @@
 [submodule "v5.0"]
 	path = v5.0
 	url = git@github.com:coderbirju/v5.0.git
+[submodule "v6.0"]
+	path = v6.0
+	url = git@github.com:coderbirju/v6.0.git
