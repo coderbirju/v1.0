@@ -1,6 +1,6 @@
-# Basic Dutch Auction - Assignment 1
+# Basic Dutch Auction
 ### Name: Arjun Raja Yogidas
-### NUID: 002964082
+
 
 The BasicDutchAuction.sol contract works as follows:
 
